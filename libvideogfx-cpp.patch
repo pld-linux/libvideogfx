@@ -1,0 +1,11 @@
+--- libvideogfx-1.0.9/libvideogfx/graphics/fileio/png.cc.orig	2014-01-22 12:07:21.000000000 +0100
++++ libvideogfx-1.0.9/libvideogfx/graphics/fileio/png.cc	2015-10-16 20:22:38.319626227 +0200
+@@ -87,7 +87,7 @@
+ 
+   void ReadImage_PNG(Image<Pixel>& img, istream& is)
+   {
+-    assert(is != NULL); // , "Open stream first.");
++    assert(is); // , "Open stream first.");
+ 
+     png_structp png_ptr;
+     png_infop info_ptr;

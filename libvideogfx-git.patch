@@ -1,0 +1,376 @@
+From 900bdea9b8ff684b087b935adfe1ce9f3a2520e6 Mon Sep 17 00:00:00 2001
+From: Dirk Farin <dirk.farin@gmail.com>
+Date: Mon, 21 Jul 2014 18:47:59 +0200
+Subject: [PATCH] added SSIM quality measure
+
+---
+ libvideogfx/graphics/measure/Makefile.am |   6 +-
+ libvideogfx/graphics/measure/ssim.cc     | 120 +++++++++++++++++++++++++++++++
+ libvideogfx/graphics/measure/ssim.hh     |  64 +++++++++++++++++
+ libvideogfx/libvideogfx.hh.in            |   1 +
+ 4 files changed, 188 insertions(+), 3 deletions(-)
+ create mode 100644 libvideogfx/graphics/measure/ssim.cc
+ create mode 100644 libvideogfx/graphics/measure/ssim.hh
+
+diff --git a/libvideogfx/graphics/measure/Makefile.am b/libvideogfx/graphics/measure/Makefile.am
+index c5201ff..54707a7 100644
+--- a/libvideogfx/graphics/measure/Makefile.am
++++ b/libvideogfx/graphics/measure/Makefile.am
+@@ -3,14 +3,14 @@
+ noinst_LTLIBRARIES = libvideogfx-graphics-measure.la
+ 
+ libvideogfx_graphics_measure_la_SOURCES = \
+-	snr.hh	\
+-	snr.cc
++	snr.hh snr.cc \
++        ssim.hh ssim.cc
+ 
+ libvideogfx_graphics_measure_includedir = \
+ 	$(includedir)/libvideogfx/graphics/measure
+ 
+ libvideogfx_graphics_measure_include_HEADERS = \
+-	snr.hh
++	snr.hh ssim.hh
+ 
+ INCLUDES = \
+ 	-I$(top_srcdir)
+diff --git a/libvideogfx/graphics/measure/ssim.cc b/libvideogfx/graphics/measure/ssim.cc
+new file mode 100644
+index 0000000..726f775
+--- /dev/null
++++ b/libvideogfx/graphics/measure/ssim.cc
+@@ -0,0 +1,120 @@
++/********************************************************************************
++    LibVideoGfx - video processing library
++    Copyright (C) 2002-2014  Dirk Farin
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) any later version.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library; if not, write to the Free Software
++    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ ********************************************************************************/
++
++#include "libvideogfx/graphics/measure/ssim.hh"
++#include "libvideogfx/graphics/filters/linear.hh"
++#include "libvideogfx/containers/array.hh"
++
++#include <math.h>
++#include <algorithm>
++using namespace std;
++
++
++namespace videogfx {
++
++  template <class T> T SQ(T t) { return t*t; }
++
++
++  Bitmap<float> SSIM::calcSSIM(const Bitmap<Pixel>& img_x,
++                               const Bitmap<Pixel>& img_y)
++  {
++    int w = img_x.AskWidth();
++    int h = img_y.AskHeight();
++
++    Array<double> filter;
++    CreateGaussFilter(filter, sigma, 0.01);
++
++    printf("filter size: %d\n",filter.AskSize());
++
++    Bitmap<float> mean_x, mean_y;
++    ConvolveHV(mean_x,img_x, filter);
++    ConvolveHV(mean_y,img_y, filter);
++
++    Bitmap<float> meandiff_x, meandiff_y;
++    meandiff_x.Create(w,h);
++    meandiff_y.Create(w,h);
++
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++) {
++        meandiff_x[y][x] = SQ(mean_x[y][x] - img_x[y][x]);
++        meandiff_y[y][x] = SQ(mean_y[y][x] - img_y[y][x]);
++      }
++
++    Bitmap<float> sigma_x, sigma_y;
++    ConvolveHV(sigma_x,meandiff_x, filter);
++    ConvolveHV(sigma_y,meandiff_y, filter);
++
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++) {
++        sigma_x[y][x] = sqrt(sigma_x[y][x]);
++        sigma_y[y][x] = sqrt(sigma_y[y][x]);
++      }
++
++    Bitmap<float> corr_tmp;
++    corr_tmp.Create(w,h);
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++) {
++        corr_tmp[y][x] = (img_x[y][x]-mean_x[y][x]) * (img_y[y][x]-mean_y[y][x]);
++      }
++
++    Bitmap<float> corr;
++    ConvolveHV(corr, corr_tmp, filter);
++
++    //return corr;
++
++    Bitmap<float> ssim;
++    ssim.Create(w,h);
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++) {
++        float s = (2*mean_x[y][x]*mean_y[y][x] + C1) * (2*corr[y][x] + C2) /
++          ( (mean_x [y][x]*mean_x [y][x] + mean_y [y][x]*mean_y [y][x] + C1 ) *
++            (sigma_x[y][x]*sigma_x[y][x] + sigma_y[y][x]*sigma_y[y][x] + C2) );
++
++        if (s<0.0) s = 0.0;
++        if (s>1.0) s = 1.0;
++
++        ssim[y][x] = s;
++      }
++
++    return ssim;
++  }
++
++
++
++  float SSIM::calcMSSIM(const Bitmap<Pixel>& img1,
++                        const Bitmap<Pixel>& img2)
++  {
++    int w = img1.AskWidth();
++    int h = img1.AskHeight();
++
++    Bitmap<float> ssim = calcSSIM(img1,img2);
++
++    double ssimSum = 0.0;
++
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++)
++        {
++          ssimSum += ssim[y][x];
++        }
++
++    ssimSum /= w*h;
++
++    return ssimSum;
++  }
++}
+diff --git a/libvideogfx/graphics/measure/ssim.hh b/libvideogfx/graphics/measure/ssim.hh
+new file mode 100644
+index 0000000..04188b8
+--- /dev/null
++++ b/libvideogfx/graphics/measure/ssim.hh
+@@ -0,0 +1,64 @@
++/*********************************************************************
++  libvideogfx/graphics/measure/ssim.hh
++
++  purpose:
++
++  notes:
++
++  to do:
++
++  author(s):
++   - Dirk Farin, dirk.farin@gmail.com
++
++  modifications:
++    21/Jul/2014 - Dirk Farin - first implementation
++ ********************************************************************************
++    LibVideoGfx - video processing library
++    Copyright (C) 2002-2014 Dirk Farin
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) any later version.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library; if not, write to the Free Software
++    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ ********************************************************************************/
++
++#ifndef LIBVIDEOGFX_GRAPHICS_MEASURE_SSIM_HH
++#define LIBVIDEOGFX_GRAPHICS_MEASURE_SSIM_HH
++
++#include <libvideogfx/graphics/datatypes/image.hh>
++
++namespace videogfx {
++
++  class SSIM
++  {
++  public:
++    SSIM() :
++      C1(0.01 * 256),
++      C2(0.03 * 256),
++      r (5), // 11x11 patches
++      sigma(1.5)
++    { }
++
++    float C1, C2;
++    int   r;
++    float sigma;
++
++    Bitmap<float> calcSSIM(const Bitmap<Pixel>& img1,
++                           const Bitmap<Pixel>& img2);
++
++    float calcMSSIM(const Bitmap<Pixel>& img1,
++                    const Bitmap<Pixel>& img2);
++  };
++}
++
++
++#endif
+diff --git a/libvideogfx/libvideogfx.hh.in b/libvideogfx/libvideogfx.hh.in
+index 704553b..bf698ed 100644
+--- a/libvideogfx/libvideogfx.hh.in
++++ b/libvideogfx/libvideogfx.hh.in
+@@ -63,6 +63,7 @@
+ #include <libvideogfx/graphics/filters/binomial.hh>
+ #include <libvideogfx/graphics/filters/scale.hh>
+ #include <libvideogfx/graphics/measure/snr.hh>
++#include <libvideogfx/graphics/measure/ssim.hh>
+ #include <libvideogfx/graphics/visualize/regions.hh>
+ #include <libvideogfx/audio/fileio/audiosink.hh>
+ #include <libvideogfx/audio/fileio/timedsink.hh>
+From 801fa41d9a3423c4f79db3213838d1a3666975d5 Mon Sep 17 00:00:00 2001
+From: Dirk Farin <dirk.farin@gmail.com>
+Date: Mon, 21 Jul 2014 18:48:31 +0200
+Subject: [PATCH] removed debug output
+
+---
+ libvideogfx/graphics/measure/ssim.cc | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/libvideogfx/graphics/measure/ssim.cc b/libvideogfx/graphics/measure/ssim.cc
+index 726f775..45c9fcb 100644
+--- a/libvideogfx/graphics/measure/ssim.cc
++++ b/libvideogfx/graphics/measure/ssim.cc
+@@ -40,8 +40,6 @@ namespace videogfx {
+     Array<double> filter;
+     CreateGaussFilter(filter, sigma, 0.01);
+ 
+-    printf("filter size: %d\n",filter.AskSize());
+-
+     Bitmap<float> mean_x, mean_y;
+     ConvolveHV(mean_x,img_x, filter);
+     ConvolveHV(mean_y,img_y, filter);
+From de0af9867541a275da411efd403668a5d61682fe Mon Sep 17 00:00:00 2001
+From: Dirk Farin <dirk.farin@gmail.com>
+Date: Tue, 22 Jul 2014 12:30:41 +0200
+Subject: [PATCH] compute per-pixel error map with selectable transfer curve
+
+---
+ libvideogfx/graphics/measure/snr.cc | 48 +++++++++++++++++++++++++++++++++++++
+ libvideogfx/graphics/measure/snr.hh | 10 ++++++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/libvideogfx/graphics/measure/snr.cc b/libvideogfx/graphics/measure/snr.cc
+index 9400734..2ea2b46 100644
+--- a/libvideogfx/graphics/measure/snr.cc
++++ b/libvideogfx/graphics/measure/snr.cc
+@@ -103,4 +103,52 @@ namespace videogfx {
+     return psnr;
+   }
+ 
++
++  Bitmap<Pixel> CalcErrorMap(const Bitmap<Pixel>& img1,
++                             const Bitmap<Pixel>& img2,
++                             enum TransferCurve transfer_curve,
++                             bool inverted)
++  {
++    int w = img1.AskWidth();
++    int h = img1.AskHeight();
++
++    const Pixel*const* p1 = img1.AskFrame();
++    const Pixel*const* p2 = img2.AskFrame();
++
++    Bitmap<Pixel> error;
++    error.Create(w,h);
++
++    Pixel*const* p = error.AskFrame();
++
++
++    // --- prepare transfer curve ---
++
++    Pixel transfer[255+1+255];
++    for (int d=-255;d<=255;d++)
++      {
++        switch (transfer_curve)
++          {
++          case TransferCurve_Linear:
++            transfer[d+255] = std::abs(d);
++            break;
++
++          case TransferCurve_Sqrt:
++            transfer[d+255] = sqrt(std::abs(d)/255.0)*255;
++            break;
++          }
++
++        if (inverted) transfer[d+255] = 255 - transfer[d+255];
++      }
++
++
++    // --- generate error map ---
++
++    for (int y=0;y<h;y++)
++      for (int x=0;x<w;x++)
++        {
++          p[y][x] = transfer[p1[y][x] - p2[y][x] + 255];
++        }
++
++    return error;
++  }
+ }
+diff --git a/libvideogfx/graphics/measure/snr.hh b/libvideogfx/graphics/measure/snr.hh
+index 20d26f2..6f2ffe2 100644
+--- a/libvideogfx/graphics/measure/snr.hh
++++ b/libvideogfx/graphics/measure/snr.hh
+@@ -53,6 +53,16 @@ namespace videogfx {
+ 		  int x0= 0,int y0=0,     // rectangle to consider for the calculation
+ 		  int x1=-1,int y1=-1);
+ 
++  enum TransferCurve
++    {
++      TransferCurve_Linear,
++      TransferCurve_Sqrt
++    };
++
++  Bitmap<Pixel> CalcErrorMap(const Bitmap<Pixel>& img1,
++                             const Bitmap<Pixel>& img2,
++                             enum TransferCurve transfer=TransferCurve_Linear,
++                             bool inverted=true);
+ }
+ 
+ 
+From ae3318979de909ffb780fa42295ad9ecea6ef482 Mon Sep 17 00:00:00 2001
+From: Dirk Farin <dirk.farin@gmail.com>
+Date: Mon, 26 Jan 2015 13:36:58 +0100
+Subject: [PATCH] fix macro name typo
+
+---
+ libvideogfx/graphics/fileio/imagesink.hh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libvideogfx/graphics/fileio/imagesink.hh b/libvideogfx/graphics/fileio/imagesink.hh
+index 915b597..bdc9e9f 100644
+--- a/libvideogfx/graphics/fileio/imagesink.hh
++++ b/libvideogfx/graphics/fileio/imagesink.hh
+@@ -34,7 +34,7 @@
+  ********************************************************************************/
+ 
+ #ifndef LIBVIDEOGFX_GRAPHICS_FILEIO_IMAGESINK_HH
+-#define LIBVIDEOGFX_GRAPHICS_FILEIO_IMGAESINK_HH
++#define LIBVIDEOGFX_GRAPHICS_FILEIO_IMAGESINK_HH
+ 
+ #include <libvideogfx/graphics/datatypes/image.hh>
+ 
