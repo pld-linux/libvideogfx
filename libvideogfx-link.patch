@@ -1,0 +1,11 @@
+--- libvideogfx-1.0.9/libvideogfx/x11/Makefile.am.orig	2014-01-22 12:07:21.000000000 +0100
++++ libvideogfx-1.0.9/libvideogfx/x11/Makefile.am	2015-10-15 22:18:14.410489236 +0200
+@@ -5,6 +5,8 @@
+ libvideogfx_x11_includedir = \
+ 	$(includedir)/libvideogfx/x11
+ 
++libvideogfx_x11_la_LIBADD = $(X_LIBS)
++
+ libvideogfx_x11_la_SOURCES = \
+ 	server.cc	\
+ 	server.hh	\

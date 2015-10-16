@@ -1,0 +1,33 @@
+--- libvideogfx-1.0.9/libvideogfx/arch/cpu.cc.orig	2014-01-22 12:07:21.000000000 +0100
++++ libvideogfx-1.0.9/libvideogfx/arch/cpu.cc	2015-10-15 21:36:59.703874154 +0200
+@@ -53,6 +53,8 @@
+ 
+ #if CPU_x86
+ 
++#include <cpuid.h>
++
+ #define CPU_CAP_MMX      (1<<0)
+ #define CPU_CAP_MMXEXT   (1<<1)
+ #define CPU_CAP_SSE      (1<<2)
+@@ -82,9 +84,7 @@
+       __cpuid((int *)regs, (int)a);
+ 
+ #else
+-      __asm__ volatile
+-	("cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3])
+-	 : "a" (a), "c" (0));
++      __cpuid_count(a, 0, regs[0], regs[1], regs[2], regs[3]);
+       // ECX is set to zero for CPUID function 4
+ #endif
+   
+@@ -110,9 +110,7 @@
+       __cpuid((int *)regs, (int)a);
+ 
+ #else
+-      __asm__ volatile
+-	("cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3])
+-	 : "a" (a), "c" (0));
++      __cpuid_count(a, 0, regs[0], regs[1], regs[2], regs[3]);
+       // ECX is set to zero for CPUID function 4
+ #endif
+ 

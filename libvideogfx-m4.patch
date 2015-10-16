@@ -1,0 +1,11 @@
+--- libvideogfx-1.0.9/libvideogfx.m4.orig	2014-01-22 12:07:21.000000000 +0100
++++ libvideogfx-1.0.9/libvideogfx.m4	2015-10-15 22:21:25.267151924 +0200
+@@ -4,7 +4,7 @@
+ dnl AM_PATH_LIBVIDEOGFX([MINIMUM-VERSION, [ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]]])
+ dnl Test for LibVideoGfx, and define LIBVIDEOGFX_CFLAGS and LIBVIDEOGFX_LIBS
+ dnl
+-AC_DEFUN(AM_PATH_LIBVIDEOGFX,
++AC_DEFUN([AM_PATH_LIBVIDEOGFX],
+ [dnl 
+ dnl Get the cflags and libraries from the libvideogfx-config script
+ dnl

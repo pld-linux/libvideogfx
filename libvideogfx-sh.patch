@@ -1,0 +1,46 @@
+--- libvideogfx-1.0.9/configure.in.orig	2014-02-03 17:52:57.000000000 +0100
++++ libvideogfx-1.0.9/configure.in	2015-10-15 21:09:02.417242456 +0200
+@@ -142,8 +142,8 @@
+ 
+ if test "$GCC" = "yes" ; then
+   if test x$have_gcc45 = xyes; then
+-#    CFLAGS+=" -std=c++0x"
+-    CXXFLAGS+=" -std=c++0x"
++#    CFLAGS=$CFLAGS" -std=c++0x"
++    CXXFLAGS="$CXXFLAGS -std=c++0x"
+   fi
+ fi
+ 
+@@ -305,8 +305,8 @@
+      AC_MSG_RESULT(no)
+    ])
+ 
+-   AC_CHECK_LIB(avcodec,  avcodec_decode_video,  [LIBS+=" -lavcodec" AC_DEFINE(HAVE_AVCODEC_DECODE_VIDEO, 1, [Define if the libavcodec supports avcodec_decode_video])], [], [-lavutil -lpthread -lm])
+-   AC_CHECK_LIB(avcodec,  avcodec_decode_video2, [LIBS+=" -lavcodec" AC_DEFINE(HAVE_AVCODEC_DECODE_VIDEO2, 1, [Define if the libavcodec supports avcodec_decode_video2])], [], [-lavutil -lpthread -lm])
++   AC_CHECK_LIB(avcodec,  avcodec_decode_video,  [LIBS="$LIBS -lavcodec" AC_DEFINE(HAVE_AVCODEC_DECODE_VIDEO, 1, [Define if the libavcodec supports avcodec_decode_video])], [], [-lavutil -lpthread -lm])
++   AC_CHECK_LIB(avcodec,  avcodec_decode_video2, [LIBS="$LIBS -lavcodec" AC_DEFINE(HAVE_AVCODEC_DECODE_VIDEO2, 1, [Define if the libavcodec supports avcodec_decode_video2])], [], [-lavutil -lpthread -lm])
+    AC_CHECK_LIB(avformat, avio_open, [AC_DEFINE(HAVE_AVIO_OPEN, 1, [Define if the libavformat supports avio_open])], [], [-lavcodec -lavutil -lpthread -lm])
+    AC_CHECK_LIB(avformat, url_fopen, [AC_DEFINE(HAVE_URL_FOPEN, 1, [Define if the libavformat supports url_fopen])], [], [-lavcodec -lavutil -lpthread -lm])
+    AC_CHECK_LIB(avformat, avformat_alloc_context, [AC_DEFINE(HAVE_AVFORMAT_ALLOW_CONTEXT, 1, [Define if the libavformat supports avformat_alloc_context,])], [], [-lavcodec -lavutil -lpthread -lz -lm])
+@@ -317,8 +317,8 @@
+      fi
+    fi
+ 
+-   AC_CHECK_LIB(avformat,  avformat_open_input, [LIBS+=" -lavformat" AC_DEFINE(HAVE_AVFORMAT_AVFORMAT_OPEN_INPUT, 1, [Define if the libavformat supports avformat_open_input])], [], [-lavcodec -lavutil -lpthread -lz -lm])
+-   AC_CHECK_LIB(avformat,  av_open_input_file,  [LIBS+=" -lavformat" AC_DEFINE(HAVE_AVFORMAT_AV_OPEN_INPUT_FILE,  1, [Define if the libavformat supports av_open_input_file])], [], [-lavcodec -lavutil -lpthread -lz -lm])
++   AC_CHECK_LIB(avformat,  avformat_open_input, [LIBS="$LIBS -lavformat" AC_DEFINE(HAVE_AVFORMAT_AVFORMAT_OPEN_INPUT, 1, [Define if the libavformat supports avformat_open_input])], [], [-lavcodec -lavutil -lpthread -lz -lm])
++   AC_CHECK_LIB(avformat,  av_open_input_file,  [LIBS="$LIBS -lavformat" AC_DEFINE(HAVE_AVFORMAT_AV_OPEN_INPUT_FILE,  1, [Define if the libavformat supports av_open_input_file])], [], [-lavcodec -lavutil -lpthread -lz -lm])
+ 
+    AC_CHECK_LIB(avformat,  avformat_write_header, [AC_DEFINE(HAVE_AVFORMAT_AVFORMAT_WRITE_HEADER, 1, [Define if the libavformat supports avformat_write_header])], [], [-lavcodec -lavutil -lpthread -lz -lm])
+    AC_CHECK_LIB(avformat,  av_write_header,       [AC_DEFINE(HAVE_AVFORMAT_AV_WRITE_HEADER,       1, [Define if the libavformat supports av_write_header])], [], [-lavcodec -lavutil -lpthread -lz -lm])
+@@ -341,8 +341,8 @@
+ 
+    saved_cflags=$CFLAGS
+    saved_cxxflags=$CXXFLAGS
+-   CFLAGS+=" -Werror" # "-fstrict-aliasing -Wstrict-aliasing=1 -Werror=strict-aliasing"
+-   CXXFLAGS+=" -Werror" # "-fstrict-aliasing -Wstrict-aliasing=1 -Werror=strict-aliasing"
++   CFLAGS="$CFLAGS -Werror" # "-fstrict-aliasing -Wstrict-aliasing=1 -Werror=strict-aliasing"
++   CXXFLAGS="$CXXFLAGS -Werror" # "-fstrict-aliasing -Wstrict-aliasing=1 -Werror=strict-aliasing"
+ 
+    AC_MSG_CHECKING(type of ByteIOContext in AVFormatContext)
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
