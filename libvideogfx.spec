@@ -1,12 +1,13 @@
 #
 # Conditional build:
+%bcond_with	ffmpeg		# enable ffmpeg support
 %bcond_without	static_libs	# don't build static libraries
 #
 Summary:	LibVideoGfx - video processing library
 Summary(pl.UTF-8):	LibVideoGfx - biblioteka do przetwarzania obrazu
 Name:		libvideogfx
 Version:	1.0.9
-Release:	1
+Release:	2
 License:	LGPL v2.1+
 Group:		Libraries
 Source0:	https://github.com/farindk/libvideogfx/releases/download/v%{version}/%{name}-%{version}.tar.gz
@@ -21,7 +22,7 @@ Patch6:		%{name}-cpp.patch
 URL:		http://dirk-farin.net/software/libvideogfx/index.html
 BuildRequires:	autoconf
 BuildRequires:	automake
-BuildRequires:	ffmpeg-devel
+%{?with_ffmpeg:BuildRequires:	ffmpeg-devel}
 BuildRequires:	libjpeg-devel
 BuildRequires:	libpng-devel
 BuildRequires:	libstdc++-devel >= 6:4.5
@@ -104,6 +105,7 @@ Statyczna biblioteka LibVideoGfx.
 %{__autoheader}
 %{__automake}
 %configure \
+	%{__with_without ffmpeg} \
 	%{!?with_static_libs:--disable-static}
 %{__make}
 
