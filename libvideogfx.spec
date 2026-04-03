@@ -7,7 +7,7 @@ Summary:	LibVideoGfx - video processing library
 Summary(pl.UTF-8):	LibVideoGfx - biblioteka do przetwarzania obrazu
 Name:		libvideogfx
 Version:	1.0.9
-Release:	2
+Release:	3
 License:	LGPL v2.1+
 Group:		Libraries
 Source0:	https://github.com/farindk/libvideogfx/releases/download/v%{version}/%{name}-%{version}.tar.gz
